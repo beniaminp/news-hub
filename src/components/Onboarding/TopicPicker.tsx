@@ -35,12 +35,12 @@ export function TopicPicker({ selected, onToggle }: Props) {
             onClick={() => onToggle(category)}
             className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all ${
               isSelected
-                ? 'border-blue-600 bg-blue-50 shadow-sm'
-                : 'border-gray-200 bg-white hover:border-gray-300'
+                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50 dark:border-blue-500 shadow-sm'
+                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             <span className="text-2xl">{CATEGORY_ICONS[category]}</span>
-            <span className={`font-medium ${isSelected ? 'text-blue-700' : 'text-gray-700'}`}>
+            <span className={`font-medium ${isSelected ? 'text-blue-700 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
               {CATEGORY_LABELS[category]}
             </span>
           </button>

@@ -48,23 +48,23 @@ export function OnboardingPage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       {/* Progress */}
       <div className="mb-8 flex items-center gap-3">
-        <div className={`h-2 flex-1 rounded-full ${step >= 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
-        <div className={`h-2 flex-1 rounded-full ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+        <div className={`h-2 flex-1 rounded-full ${step >= 1 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
+        <div className={`h-2 flex-1 rounded-full ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
       </div>
 
       {step === 1 ? (
         <>
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">What topics interest you?</h1>
-            <p className="mt-1 text-gray-500">Choose at least 3 topics to personalize your feed</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">What topics interest you?</h1>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">Choose at least 3 topics to personalize your feed</p>
           </div>
           <TopicPicker selected={selectedCategories} onToggle={toggleCategory} />
         </>
       ) : (
         <>
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Choose your news sources</h1>
-            <p className="mt-1 text-gray-500">Select the sources you trust. Leave empty to see all sources.</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Choose your news sources</h1>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">Select the sources you trust. Leave empty to see all sources.</p>
           </div>
           <SourcePicker
             selectedCategories={selectedCategories}
@@ -80,7 +80,7 @@ export function OnboardingPage() {
           {step === 2 && (
             <button
               onClick={() => setStep(1)}
-              className="rounded-lg px-6 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100"
+              className="rounded-lg px-6 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               Back
             </button>
@@ -89,7 +89,7 @@ export function OnboardingPage() {
         <div className="flex gap-3">
           <button
             onClick={handleSkip}
-            className="rounded-lg px-6 py-3 text-sm font-medium text-gray-500 hover:bg-gray-100"
+            className="rounded-lg px-6 py-3 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             Skip
           </button>

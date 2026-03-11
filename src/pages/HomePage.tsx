@@ -35,7 +35,7 @@ export function HomePage() {
   const { articles, loading, error, refresh } = useNews(activeCategory, sourceIds, categories);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <CategoryTabs
         categories={categories}
         activeCategory={activeCategory}

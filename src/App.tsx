@@ -7,7 +7,7 @@ import { SettingsPage } from './pages/SettingsPage';
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
         <Header />
         <Routes>
           <Route path="/" element={<HomePage />} />
