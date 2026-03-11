@@ -32,7 +32,7 @@ export function HomePage() {
     ? preferences.selectedSourceIds
     : undefined;
 
-  const { articles, loading, error, refresh } = useNews(activeCategory, sourceIds);
+  const { articles, loading, error, refresh } = useNews(activeCategory, sourceIds, categories);
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -7,6 +7,7 @@ const REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour
 export function useNews(
   category: Category,
   selectedSourceIds?: string[],
+  userCategories?: Category[],
 ) {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +18,7 @@ export function useNews(
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchNewsForCategory(category, selectedSourceIds, forceRefresh);
+      const data = await fetchNewsForCategory(category, selectedSourceIds, userCategories, forceRefresh);
       setArticles(data);
     } catch (err) {
       setError('Failed to load news. Please try again.');
@@ -25,12 +26,11 @@ export function useNews(
     } finally {
       setLoading(false);
     }
-  }, [category, selectedSourceIds]);
+  }, [category, selectedSourceIds, userCategories]);
 
   useEffect(() => {
     loadNews();
 
-    // Set up hourly refresh
     intervalRef.current = setInterval(() => {
       loadNews(true);
     }, REFRESH_INTERVAL);

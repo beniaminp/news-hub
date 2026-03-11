@@ -31,9 +31,38 @@ function setCachedArticles(category: Category, articles: Article[]): void {
   }
 }
 
+// Keywords that signal an article belongs to a specific category.
+// Used to filter out off-topic articles from general/top feeds.
+const CATEGORY_KEYWORDS: Partial<Record<Category, RegExp>> = {
+  sports: /\b(nfl|nba|mlb|nhl|fifa|premier league|champions league|serie a|la liga|bundesliga|tennis|golf|f1|formula|cricket|rugby|boxing|ufc|mma|quarterback|touchdown|goalkeeper|medal|olympic|athlete|playoff|championship|match day|halftime|striker|midfielder|slam dunk|grand prix|world cup)\b/i,
+  entertainment: /\b(movie|film|album|concert|grammy|oscar|emmy|tony award|box office|trailer|celebrity|red carpet|netflix series|disney|blockbuster|soundtrack)\b/i,
+};
+
+// If user didn't select a category, filter out articles that clearly belong to it
+function filterOffTopicArticles(
+  articles: Article[],
+  activeCategory: Category,
+  userCategories: Category[],
+): Article[] {
+  // Build list of categories to exclude
+  const excludePatterns: RegExp[] = [];
+  for (const [cat, pattern] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (!userCategories.includes(cat as Category) && cat !== activeCategory) {
+      excludePatterns.push(pattern);
+    }
+  }
+  if (excludePatterns.length === 0) return articles;
+
+  return articles.filter(article => {
+    const text = `${article.title} ${article.description}`.toLowerCase();
+    return !excludePatterns.some(p => p.test(text));
+  });
+}
+
 export async function fetchNewsForCategory(
   category: Category,
   selectedSourceIds?: string[],
+  userCategories?: Category[],
   forceRefresh = false,
 ): Promise<Article[]> {
   if (!forceRefresh) {
@@ -102,8 +131,13 @@ export async function fetchNewsForCategory(
     }
   }
 
-  setCachedArticles(category, unique);
-  return unique;
+  // Filter out off-topic articles (e.g. sports from "top" feeds when user didn't select sports)
+  const filtered = userCategories
+    ? filterOffTopicArticles(unique, category, userCategories)
+    : unique;
+
+  setCachedArticles(category, filtered);
+  return filtered;
 }
 
 export async function fetchNewsForSources(
@@ -120,7 +154,7 @@ export async function fetchNewsForSources(
   const allArticles: Article[] = [];
   const fetches = Array.from(byCategory.entries()).map(async ([category, categorySources]) => {
     const sourceIds = categorySources.map(s => s.id);
-    const articles = await fetchNewsForCategory(category, sourceIds, forceRefresh);
+    const articles = await fetchNewsForCategory(category, sourceIds, undefined, forceRefresh);
     allArticles.push(...articles);
   });
 
