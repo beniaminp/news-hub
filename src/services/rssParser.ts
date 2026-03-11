@@ -1,29 +1,36 @@
 import { Article, Category } from '../types';
 
 const CORS_PROXIES = [
-  (url: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  {
+    name: 'allorigins',
+    url: (feedUrl: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`,
+    parse: async (response: Response) => {
+      const data = await response.json();
+      return data?.contents as string | undefined;
+    },
+  },
+  {
+    name: 'corsproxy',
+    url: (feedUrl: string) => `https://corsproxy.io/?url=${encodeURIComponent(feedUrl)}`,
+    parse: async (response: Response) => {
+      return await response.text();
+    },
+  },
 ];
 
 async function fetchWithProxy(url: string): Promise<string> {
   for (const proxy of CORS_PROXIES) {
     try {
-      const proxyUrl = proxy(url);
+      const proxyUrl = proxy.url(url);
       const response = await fetch(proxyUrl);
       if (!response.ok) continue;
-
-      const data = await response.json().catch(() => null);
-      // allorigins returns { contents: "..." }
-      if (data?.contents) return data.contents;
-
-      // corsproxy returns raw text
-      const text = await response.text().catch(() => null);
-      if (text) return text;
+      const text = await proxy.parse(response);
+      if (text && text.length > 50) return text;
     } catch {
       continue;
     }
   }
-  // Last resort: direct fetch (works if CORS is allowed)
+  // Last resort: direct fetch (works if source allows CORS)
   const response = await fetch(url);
   return response.text();
 }
@@ -42,6 +49,10 @@ function parseRSSXml(xml: string, sourceId: string, sourceName: string, category
   const parser = new DOMParser();
   const doc = parser.parseFromString(xml, 'text/xml');
 
+  // Check for parse error
+  const parseError = doc.querySelector('parsererror');
+  if (parseError) return [];
+
   const articles: Article[] = [];
 
   // Try RSS 2.0 format
@@ -54,38 +65,44 @@ function parseRSSXml(xml: string, sourceId: string, sourceName: string, category
       const pubDateStr = item.querySelector('pubDate')?.textContent?.trim();
       const pubDate = pubDateStr ? new Date(pubDateStr) : new Date();
 
-      // Try multiple image sources
       let imageUrl: string | undefined;
-      const mediaContent = item.querySelector('content');
-      if (mediaContent?.getAttribute('url')) {
-        imageUrl = mediaContent.getAttribute('url') || undefined;
+
+      // media:thumbnail
+      const mediaThumbnail = item.getElementsByTagNameNS('http://search.yahoo.com/mrss/', 'thumbnail')[0];
+      if (mediaThumbnail) {
+        imageUrl = mediaThumbnail.getAttribute('url') || undefined;
       }
-      const enclosure = item.querySelector('enclosure');
-      if (!imageUrl && enclosure?.getAttribute('type')?.startsWith('image')) {
-        imageUrl = enclosure.getAttribute('url') || undefined;
-      }
-      if (!imageUrl) {
-        const mediaThumbnail = item.getElementsByTagNameNS('http://search.yahoo.com/mrss/', 'thumbnail')[0];
-        if (mediaThumbnail) {
-          imageUrl = mediaThumbnail.getAttribute('url') || undefined;
-        }
-      }
+      // media:content
       if (!imageUrl) {
         const mediaContentNS = item.getElementsByTagNameNS('http://search.yahoo.com/mrss/', 'content')[0];
-        if (mediaContentNS) {
+        if (mediaContentNS?.getAttribute('url')) {
           imageUrl = mediaContentNS.getAttribute('url') || undefined;
         }
       }
+      // enclosure
+      if (!imageUrl) {
+        const enclosure = item.querySelector('enclosure');
+        if (enclosure?.getAttribute('type')?.startsWith('image')) {
+          imageUrl = enclosure.getAttribute('url') || undefined;
+        }
+      }
+      // image in description HTML
       if (!imageUrl) {
         imageUrl = extractImageFromContent(description);
       }
+      // content:encoded
+      if (!imageUrl) {
+        const contentEncoded = item.getElementsByTagNameNS('http://purl.org/rss/1.0/modules/content/', 'encoded')[0];
+        if (contentEncoded?.textContent) {
+          imageUrl = extractImageFromContent(contentEncoded.textContent);
+        }
+      }
 
-      // Clean description of HTML tags
       const cleanDesc = description.replace(/<[^>]*>/g, '').substring(0, 300);
 
       if (title) {
         articles.push({
-          id: `${sourceId}-${btoa(link || title).substring(0, 20)}`,
+          id: `${sourceId}-${btoa(unescape(encodeURIComponent(link || title))).substring(0, 20)}`,
           title,
           description: cleanDesc,
           link,
@@ -111,11 +128,19 @@ function parseRSSXml(xml: string, sourceId: string, sourceName: string, category
     const pubDate = pubDateStr ? new Date(pubDateStr) : new Date();
 
     const cleanDesc = summary.replace(/<[^>]*>/g, '').substring(0, 300);
-    const imageUrl = extractImageFromContent(summary);
+    let imageUrl = extractImageFromContent(summary);
+
+    // media:thumbnail in Atom
+    if (!imageUrl) {
+      const mediaThumbnail = entry.getElementsByTagNameNS('http://search.yahoo.com/mrss/', 'thumbnail')[0];
+      if (mediaThumbnail) {
+        imageUrl = mediaThumbnail.getAttribute('url') || undefined;
+      }
+    }
 
     if (title) {
       articles.push({
-        id: `${sourceId}-${btoa(link || title).substring(0, 20)}`,
+        id: `${sourceId}-${btoa(unescape(encodeURIComponent(link || title))).substring(0, 20)}`,
         title,
         description: cleanDesc,
         link,

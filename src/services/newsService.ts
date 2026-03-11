@@ -41,9 +41,16 @@ export async function fetchNewsForCategory(
     if (cached) return cached;
   }
 
-  let sources = NEWS_SOURCES.filter(s => s.category === category);
+  const allCategorySources = NEWS_SOURCES.filter(s => s.category === category);
+
+  // Only filter by selectedSourceIds if user picked specific sources in THIS category
+  let sources = allCategorySources;
   if (selectedSourceIds && selectedSourceIds.length > 0) {
-    sources = sources.filter(s => selectedSourceIds.includes(s.id));
+    const filtered = allCategorySources.filter(s => selectedSourceIds.includes(s.id));
+    // If user selected sources in this category, use those; otherwise show all
+    if (filtered.length > 0) {
+      sources = filtered;
+    }
   }
 
   // Fetch all feeds in parallel with a timeout
