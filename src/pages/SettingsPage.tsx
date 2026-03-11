@@ -2,17 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { TopicPicker } from '../components/Onboarding/TopicPicker';
 import { SourcePicker } from '../components/Onboarding/SourcePicker';
 import { usePreferences } from '../hooks/usePreferences';
-import { useAuth } from '../context/AuthContext';
 import { clearAllCache } from '../services/newsService';
 import { Category } from '../types';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export function SettingsPage() {
-  const { user, configured } = useAuth();
-  const { preferences, loading, toggleCategory, toggleSource, updatePreferences } = usePreferences();
+  const { preferences, toggleCategory, toggleSource, updatePreferences } = usePreferences();
   const navigate = useNavigate();
-
-  if (loading) return <LoadingSpinner />;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -24,27 +19,6 @@ export function SettingsPage() {
         >
           Done
         </button>
-      </div>
-
-      <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="mb-1 text-lg font-semibold text-gray-800">Sync</h2>
-        {configured && user ? (
-          <div className="flex items-center gap-3">
-            <img src={user.avatar_url} alt="" className="h-8 w-8 rounded-full" />
-            <div>
-              <p className="text-sm font-medium text-gray-700">{user.name}</p>
-              <p className="text-xs text-green-600">Connected — preferences sync to GitHub</p>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500">
-            Not connected. Preferences are stored locally only.{' '}
-            <a href="#/login" onClick={(e) => { e.preventDefault(); navigate('/login'); }} className="text-blue-600 hover:underline">
-              Connect GitHub
-            </a>{' '}
-            to sync across devices.
-          </p>
-        )}
       </div>
 
       <div className="mb-8">

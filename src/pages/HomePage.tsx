@@ -5,10 +5,9 @@ import { NewsList } from '../components/News/NewsList';
 import { useNews } from '../hooks/useNews';
 import { usePreferences } from '../hooks/usePreferences';
 import { Category } from '../types';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export function HomePage() {
-  const { preferences, loading: prefsLoading } = usePreferences();
+  const { preferences } = usePreferences();
   const navigate = useNavigate();
 
   const categories = preferences.selectedCategories.length > 0
@@ -17,14 +16,12 @@ export function HomePage() {
 
   const [activeCategory, setActiveCategory] = useState<Category>(categories[0]);
 
-  // Redirect to onboarding if not completed
   useEffect(() => {
-    if (!prefsLoading && !preferences.onboardingComplete) {
+    if (!preferences.onboardingComplete) {
       navigate('/onboarding');
     }
-  }, [prefsLoading, preferences.onboardingComplete, navigate]);
+  }, [preferences.onboardingComplete, navigate]);
 
-  // Reset active category if it's not in the list
   useEffect(() => {
     if (!categories.includes(activeCategory)) {
       setActiveCategory(categories[0]);
@@ -36,8 +33,6 @@ export function HomePage() {
     : undefined;
 
   const { articles, loading, error, refresh } = useNews(activeCategory, sourceIds);
-
-  if (prefsLoading) return <LoadingSpinner />;
 
   return (
     <div className="min-h-screen bg-gray-50">
