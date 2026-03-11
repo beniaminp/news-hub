@@ -75,12 +75,32 @@ export async function fetchNewsForCategory(
 
   // Deduplicate by similar titles
   const seen = new Set<string>();
-  const unique = articles.filter(article => {
+  const deduped = articles.filter(article => {
     const key = article.title.toLowerCase().substring(0, 60);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+
+  // Interleave sources: round-robin pick from each source's queue
+  // so no single source dominates the feed
+  const bySource = new Map<string, Article[]>();
+  for (const article of deduped) {
+    const list = bySource.get(article.sourceId) || [];
+    list.push(article);
+    bySource.set(article.sourceId, list);
+  }
+
+  const queues = Array.from(bySource.values());
+  const unique: Article[] = [];
+  let maxLen = Math.max(...queues.map(q => q.length), 0);
+  for (let i = 0; i < maxLen; i++) {
+    for (const queue of queues) {
+      if (i < queue.length) {
+        unique.push(queue[i]);
+      }
+    }
+  }
 
   setCachedArticles(category, unique);
   return unique;
