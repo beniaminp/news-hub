@@ -14,8 +14,8 @@ const pwaPlugins = VitePWA({
     background_color: '#f9fafb',
     display: 'standalone',
     orientation: 'portrait',
-    scope: '/news-hub/',
-    start_url: '/news-hub/',
+    scope: '/',
+    start_url: '/',
     icons: [
       { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
       { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },
@@ -24,7 +24,8 @@ const pwaPlugins = VitePWA({
   },
   workbox: {
     globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-    navigateFallback: '/news-hub/index.html',
+    navigateFallback: '/index.html',
+    navigateFallbackDenylist: [/^\/api\//],
     runtimeCaching: [
       {
         urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -42,5 +43,4 @@ const pwaPlugins = VitePWA({
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), ...pwaPlugins as PluginOption[]],
-  base: '/news-hub/',
 })

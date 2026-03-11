@@ -6,7 +6,7 @@ import { SettingsPage } from './pages/SettingsPage';
 
 export default function App() {
   return (
-    <BrowserRouter basename="/news-hub">
+    <BrowserRouter>
       <div className="min-h-screen bg-gray-50">
         <Header />
         <Routes>

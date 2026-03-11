@@ -174,13 +174,35 @@ function parseXml(xml: string, sourceId: string, sourceName: string, category: C
   return articles;
 }
 
+// Our own Vercel proxy — no CORS issues, no third-party dependency
+async function fetchViaOwnProxy(
+  rssUrl: string,
+  sourceId: string,
+  sourceName: string,
+  category: Category,
+): Promise<Article[]> {
+  const response = await fetch(`/api/rss?url=${encodeURIComponent(rssUrl)}`);
+  if (!response.ok) throw new Error(`Proxy ${response.status}`);
+  const xml = await response.text();
+  if (!xml || xml.length < 100) throw new Error('Empty response');
+  return parseXml(xml, sourceId, sourceName, category);
+}
+
 export async function fetchRSSFeed(
   rssUrl: string,
   sourceId: string,
   sourceName: string,
   category: Category,
 ): Promise<Article[]> {
-  // Try rss2json first (most reliable), fall back to CORS proxy
+  // 1. Own proxy (Vercel edge function)
+  try {
+    const articles = await fetchViaOwnProxy(rssUrl, sourceId, sourceName, category);
+    if (articles.length > 0) return articles;
+  } catch {
+    // fall through
+  }
+
+  // 2. rss2json.com as fallback
   try {
     const articles = await fetchViaRss2Json(rssUrl, sourceId, sourceName, category);
     if (articles.length > 0) return articles;
@@ -188,6 +210,7 @@ export async function fetchRSSFeed(
     // fall through
   }
 
+  // 3. CORS proxies as last resort
   try {
     return await fetchViaCorsProxy(rssUrl, sourceId, sourceName, category);
   } catch {
