@@ -1,59 +1,59 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import {
-  User,
-  onAuthStateChanged,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  GoogleAuthProvider,
-  signInWithPopup,
-  updateProfile,
-} from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { getGitHubUser, setGitHubConfig, clearGitHubConfig, isGitHubConfigured } from '../services/githubStorage';
+
+interface GitHubUser {
+  login: string;
+  avatar_url: string;
+  name: string;
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: GitHubUser | null;
   loading: boolean;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  logout: () => Promise<void>;
+  configured: boolean;
+  login: (token: string, repo: string) => Promise<boolean>;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<GitHubUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [configured, setConfigured] = useState(isGitHubConfigured());
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    async function init() {
+      if (isGitHubConfigured()) {
+        const ghUser = await getGitHubUser();
+        setUser(ghUser);
+        setConfigured(true);
+      }
       setLoading(false);
-    });
-    return unsubscribe;
+    }
+    init();
   }, []);
 
-  const register = async (email: string, password: string, displayName: string) => {
-    const result = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(result.user, { displayName });
-  };
+  const login = useCallback(async (token: string, repo: string): Promise<boolean> => {
+    setGitHubConfig(token, repo);
+    const ghUser = await getGitHubUser();
+    if (ghUser) {
+      setUser(ghUser);
+      setConfigured(true);
+      return true;
+    }
+    clearGitHubConfig();
+    return false;
+  }, []);
 
-  const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-  };
-
-  const loginWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  };
-
-  const logout = async () => {
-    await signOut(auth);
-  };
+  const logout = useCallback(() => {
+    clearGitHubConfig();
+    setUser(null);
+    setConfigured(false);
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, register, login, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, loading, configured, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

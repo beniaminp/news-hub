@@ -4,12 +4,10 @@ import { CategoryTabs } from '../components/Layout/CategoryTabs';
 import { NewsList } from '../components/News/NewsList';
 import { useNews } from '../hooks/useNews';
 import { usePreferences } from '../hooks/usePreferences';
-import { useAuth } from '../context/AuthContext';
 import { Category } from '../types';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export function HomePage() {
-  const { user } = useAuth();
   const { preferences, loading: prefsLoading } = usePreferences();
   const navigate = useNavigate();
 
@@ -21,10 +19,10 @@ export function HomePage() {
 
   // Redirect to onboarding if not completed
   useEffect(() => {
-    if (user && !prefsLoading && !preferences.onboardingComplete) {
+    if (!prefsLoading && !preferences.onboardingComplete) {
       navigate('/onboarding');
     }
-  }, [user, prefsLoading, preferences.onboardingComplete, navigate]);
+  }, [prefsLoading, preferences.onboardingComplete, navigate]);
 
   // Reset active category if it's not in the list
   useEffect(() => {

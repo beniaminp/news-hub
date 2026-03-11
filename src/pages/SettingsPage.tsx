@@ -8,7 +8,7 @@ import { Category } from '../types';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export function SettingsPage() {
-  const { user } = useAuth();
+  const { user, configured } = useAuth();
   const { preferences, loading, toggleCategory, toggleSource, updatePreferences } = usePreferences();
   const navigate = useNavigate();
 
@@ -26,13 +26,26 @@ export function SettingsPage() {
         </button>
       </div>
 
-      {user && (
-        <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6">
-          <h2 className="mb-1 text-lg font-semibold text-gray-800">Account</h2>
-          <p className="text-sm text-gray-500">{user.email}</p>
-          <p className="text-sm text-gray-500">{user.displayName || 'No name set'}</p>
-        </div>
-      )}
+      <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6">
+        <h2 className="mb-1 text-lg font-semibold text-gray-800">Sync</h2>
+        {configured && user ? (
+          <div className="flex items-center gap-3">
+            <img src={user.avatar_url} alt="" className="h-8 w-8 rounded-full" />
+            <div>
+              <p className="text-sm font-medium text-gray-700">{user.name}</p>
+              <p className="text-xs text-green-600">Connected — preferences sync to GitHub</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">
+            Not connected. Preferences are stored locally only.{' '}
+            <a href="#/login" onClick={(e) => { e.preventDefault(); navigate('/login'); }} className="text-blue-600 hover:underline">
+              Connect GitHub
+            </a>{' '}
+            to sync across devices.
+          </p>
+        )}
+      </div>
 
       <div className="mb-8">
         <h2 className="mb-4 text-lg font-semibold text-gray-800">Topics</h2>

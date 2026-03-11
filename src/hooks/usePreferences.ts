@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { UserPreferences, Category } from '../types';
-import { getUserPreferences, saveUserPreferences } from '../services/firestore';
-import { useAuth } from '../context/AuthContext';
+import { readPreferences, writePreferences, isGitHubConfigured } from '../services/githubStorage';
 
 const LOCAL_PREFS_KEY = 'newshub_preferences';
 
@@ -23,54 +22,88 @@ function setLocalPrefs(prefs: UserPreferences) {
   localStorage.setItem(LOCAL_PREFS_KEY, JSON.stringify(prefs));
 }
 
+// Debounce writing to GitHub to avoid too many commits
+let writeTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function debouncedGitHubWrite(prefs: UserPreferences) {
+  if (writeTimeout) clearTimeout(writeTimeout);
+  writeTimeout = setTimeout(() => {
+    if (isGitHubConfigured()) {
+      writePreferences(prefs);
+    }
+  }, 2000);
+}
+
 export function usePreferences() {
-  const { user } = useAuth();
   const [preferences, setPreferences] = useState<UserPreferences>(getLocalPrefs());
   const [loading, setLoading] = useState(true);
+  const initialized = useRef(false);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
-      if (user) {
-        const prefs = await getUserPreferences(user.uid);
-        setPreferences(prefs);
-        setLocalPrefs(prefs);
-      } else {
-        setPreferences(getLocalPrefs());
+      // Try loading from GitHub first
+      if (isGitHubConfigured()) {
+        const result = await readPreferences();
+        if (result) {
+          setPreferences(result.prefs);
+          setLocalPrefs(result.prefs);
+          initialized.current = true;
+          setLoading(false);
+          return;
+        }
       }
+      // Fallback to localStorage
+      setPreferences(getLocalPrefs());
+      initialized.current = true;
       setLoading(false);
     }
     load();
-  }, [user]);
+  }, []);
 
   const updatePreferences = useCallback(async (updates: Partial<UserPreferences>) => {
-    const newPrefs = { ...preferences, ...updates };
-    setPreferences(newPrefs);
-    setLocalPrefs(newPrefs);
-    if (user) {
-      await saveUserPreferences(user.uid, updates);
-    }
-  }, [preferences, user]);
+    setPreferences(prev => {
+      const newPrefs = { ...prev, ...updates };
+      setLocalPrefs(newPrefs);
+      debouncedGitHubWrite(newPrefs);
+      return newPrefs;
+    });
+  }, []);
 
   const toggleCategory = useCallback(async (category: Category) => {
-    const current = preferences.selectedCategories;
-    const updated = current.includes(category)
-      ? current.filter(c => c !== category)
-      : [...current, category];
-    await updatePreferences({ selectedCategories: updated });
-  }, [preferences.selectedCategories, updatePreferences]);
+    setPreferences(prev => {
+      const current = prev.selectedCategories;
+      const updated = current.includes(category)
+        ? current.filter(c => c !== category)
+        : [...current, category];
+      const newPrefs = { ...prev, selectedCategories: updated };
+      setLocalPrefs(newPrefs);
+      debouncedGitHubWrite(newPrefs);
+      return newPrefs;
+    });
+  }, []);
 
   const toggleSource = useCallback(async (sourceId: string) => {
-    const current = preferences.selectedSourceIds;
-    const updated = current.includes(sourceId)
-      ? current.filter(id => id !== sourceId)
-      : [...current, sourceId];
-    await updatePreferences({ selectedSourceIds: updated });
-  }, [preferences.selectedSourceIds, updatePreferences]);
+    setPreferences(prev => {
+      const current = prev.selectedSourceIds;
+      const updated = current.includes(sourceId)
+        ? current.filter(id => id !== sourceId)
+        : [...current, sourceId];
+      const newPrefs = { ...prev, selectedSourceIds: updated };
+      setLocalPrefs(newPrefs);
+      debouncedGitHubWrite(newPrefs);
+      return newPrefs;
+    });
+  }, []);
 
   const completeOnboarding = useCallback(async () => {
-    await updatePreferences({ onboardingComplete: true });
-  }, [updatePreferences]);
+    setPreferences(prev => {
+      const newPrefs = { ...prev, onboardingComplete: true };
+      setLocalPrefs(newPrefs);
+      debouncedGitHubWrite(newPrefs);
+      return newPrefs;
+    });
+  }, []);
 
   return {
     preferences,

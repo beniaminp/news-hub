@@ -2,12 +2,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { user, configured, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
   return (
@@ -21,41 +21,34 @@ export function Header() {
         </Link>
 
         <div className="flex items-center gap-3">
-          {user ? (
-            <>
-              <Link
-                to="/settings"
+          <Link
+            to="/settings"
+            className="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100"
+          >
+            Settings
+          </Link>
+          {configured && user ? (
+            <div className="flex items-center gap-2">
+              <img
+                src={user.avatar_url}
+                alt={user.login}
+                className="h-8 w-8 rounded-full"
+              />
+              <span className="hidden text-sm text-gray-600 sm:inline">{user.name}</span>
+              <button
+                onClick={handleLogout}
                 className="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100"
               >
-                Settings
-              </Link>
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-medium text-white">
-                  {user.displayName?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?'}
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100"
-                >
-                  Sign out
-                </button>
-              </div>
-            </>
+                Disconnect
+              </button>
+            </div>
           ) : (
-            <>
-              <Link
-                to="/login"
-                className="rounded-lg px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
-              >
-                Sign in
-              </Link>
-              <Link
-                to="/register"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-              >
-                Sign up
-              </Link>
-            </>
+            <Link
+              to="/login"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Connect GitHub
+            </Link>
           )}
         </div>
       </div>

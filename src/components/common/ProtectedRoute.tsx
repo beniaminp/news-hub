@@ -3,10 +3,19 @@ import { useAuth } from '../../context/AuthContext';
 import { LoadingSpinner } from './LoadingSpinner';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) return <LoadingSpinner />;
-  if (!user) return <Navigate to="/login" replace />;
+
+  // Settings and onboarding work even without GitHub connection
+  return <>{children}</>;
+}
+
+export function RequireGitHub({ children }: { children: React.ReactNode }) {
+  const { configured, loading } = useAuth();
+
+  if (loading) return <LoadingSpinner />;
+  if (!configured) return <Navigate to="/login" replace />;
 
   return <>{children}</>;
 }

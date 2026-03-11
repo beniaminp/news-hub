@@ -3,10 +3,8 @@ import { AuthProvider } from './context/AuthContext';
 import { Header } from './components/Layout/Header';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { SettingsPage } from './pages/SettingsPage';
-import { ProtectedRoute } from './components/common/ProtectedRoute';
 
 export default function App() {
   return (
@@ -17,23 +15,8 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route
-              path="/onboarding"
-              element={
-                <ProtectedRoute>
-                  <OnboardingPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <SettingsPage />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </div>
       </AuthProvider>
